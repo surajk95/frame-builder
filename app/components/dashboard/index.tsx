@@ -1,24 +1,42 @@
 'use client'
 import { useState } from 'react';
-import { X } from 'lucide-react'; // Import X icon from lucide-react
-
-// Define the Frame type
-type Frame = {
-  id: string;
-  orderId: number;
-  caption: string;
-  images: string[];
-};
+import { Plus } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Frame } from './types';
+import { SortableFrame } from './SortableFrame';
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 export default function Dashboard() {
   const [frames, setFrames] = useState<Frame[]>([]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const addFrame = () => {
     const newFrame: Frame = {
-      id: crypto.randomUUID(), // Generate a unique ID
-      orderId: frames.length, // Use the current length as orderId
-      caption: '', // Initialize with empty caption
-      images: [], // Initialize with empty images array
+      id: crypto.randomUUID(),
+      orderId: frames.length,
+      caption: '',
+      images: [],
     };
 
     setFrames([...frames, newFrame]);
@@ -28,40 +46,58 @@ export default function Dashboard() {
     setFrames(frames.filter(frame => frame.id !== frameId));
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const {active, over} = event;
+    
+    if (over && active.id !== over.id) {
+      setFrames((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        
+        // Update orderIds after moving
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        return newItems.map((item, index) => ({
+          ...item,
+          orderId: index
+        }));
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen w-full p-4">
-      {/* Display frames */}
-      <div className="space-y-4">
-        {frames.map((frame, index) => (
-          <div
-            key={frame.id}
-            className="w-full h-[100px] border border-gray-300 rounded-lg p-4 relative"
-          >
-            {/* Add close button */}
-            <button
-              onClick={() => removeFrame(frame.id)}
-              className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 
-                         transition-colors"
-              aria-label="Remove frame"
-            >
-              <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
-            </button>
-            
-            {index + 1}.
-            <div>Caption: {frame.caption}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add Frame button */}
-      <button
-        onClick={addFrame}
-        className="w-full
-                 bg-blue-500 text-white px-6 mt-5 py-2 rounded-lg 
-                 hover:bg-blue-600 transition-colors"
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        Add Frame
-      </button>
+        <SortableContext 
+          items={frames}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-4">
+            {frames.map((frame) => (
+              <SortableFrame
+                key={frame.id}
+                frame={frame}
+                onRemove={removeFrame}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      <Card className="mt-5 cursor-pointer hover:bg-accent transition-colors" onClick={addFrame}>
+        <CardContent className="p-6">
+          <Button 
+            variant="ghost" 
+            className="w-full h-full flex items-center justify-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Frame
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
