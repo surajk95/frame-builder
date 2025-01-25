@@ -1,8 +1,8 @@
+import { Images } from "@/app/components/images"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
@@ -13,8 +13,7 @@ export function AppSidebar() {
       <SidebarTrigger className="absolute left-[-40px] bottom-4" />
       <SidebarHeader />
       <SidebarContent>
-        <SidebarGroup />
-        <SidebarGroup />
+        <Images />
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>

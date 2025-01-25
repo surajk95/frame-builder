@@ -1,14 +1,17 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { X } from "lucide-react";
-import { Frame } from "./types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Grip, X } from "lucide-react";
+import { Frame, Image } from "./types";
+import { useDroppable } from "@dnd-kit/core";
 
-interface Props {
+interface SortableFrameProps {
   frame: Frame;
   onRemove: (id: string) => void;
 }
 
-export function SortableFrame({ frame, onRemove }: Props) {
+export function SortableFrame({ frame, onRemove }: SortableFrameProps) {
   const {
     attributes,
     listeners,
@@ -16,6 +19,10 @@ export function SortableFrame({ frame, onRemove }: Props) {
     transform,
     transition,
   } = useSortable({ id: frame.id });
+
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: `droppable-${frame.id}`,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -26,21 +33,40 @@ export function SortableFrame({ frame, onRemove }: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className="w-full h-[100px] border border-gray-300 rounded-lg p-4 relative bg-background cursor-grab active:cursor-grabbing"
+      className="relative"
     >
-      <button
-        onClick={() => onRemove(frame.id)}
-        className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 
-                   transition-colors"
-        aria-label="Remove frame"
+      <div
+        className="absolute top-3 left-3 cursor-move"
+        {...attributes}
+        {...listeners}
       >
-        <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
-      </button>
+        <Grip className="h-4 w-4" />
+      </div>
       
-      {frame.orderId + 1}.
-      <div>Caption: {frame.caption}</div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2"
+        onClick={() => onRemove(frame.id)}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+        <div
+          ref={setDroppableRef}
+          className="min-h-[100px] border-2 border-gray-300 border-gray-200 rounded-md p-4"
+        >
+          {frame.orderId + 1}.
+          <div className="grid grid-cols-6 gap-2">
+            {/* {frame.images.map((image) => (
+              <img
+                key={image.id}
+                src={image.url}
+                alt="Frame image"
+                className="w-full aspect-square object-cover rounded-md"
+              />
+            ))} */}
+          </div>
+        </div>
     </div>
   );
 } 

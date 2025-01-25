@@ -13,6 +13,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -49,18 +50,41 @@ export default function Dashboard() {
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
     
-    if (over && active.id !== over.id) {
+    if (!over) return;
+
+    // Handle frame reordering
+    if (!over.id.toString().includes('droppable-')) {
       setFrames((items) => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
         
-        // Update orderIds after moving
         const newItems = arrayMove(items, oldIndex, newIndex);
         return newItems.map((item, index) => ({
           ...item,
           orderId: index
         }));
       });
+      return;
+    }
+
+    // Handle image dropping into frames
+    const frameId = over.id.toString().replace('droppable-', '');
+    const frame = frames.find(f => f.id === frameId);
+    
+    if (frame) {
+      setFrames(frames.map(f => {
+        if (f.id === frameId) {
+          return {
+            ...f,
+            images: [...f.images, {
+              id: active.id.toString(),
+              url: (active.data.current as any)?.url || '',
+              orderId: f.images.length
+            }]
+          };
+        }
+        return f;
+      }));
     }
   };
 
