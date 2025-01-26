@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Frame } from './types';
 import { SortableFrame } from './SortableFrame';
 import {
@@ -23,7 +24,12 @@ import {
 } from '@dnd-kit/sortable';
 
 export default function Dashboard() {
-  const [frames, setFrames] = useState<Frame[]>([]);
+  const [frames, setFrames] = useState<Frame[]>(() => [{
+    id: crypto.randomUUID(),
+    orderId: 0,
+    caption: '',
+    images: [],
+  }]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -31,6 +37,14 @@ export default function Dashboard() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const updateCaption = (frameId: string, caption: string) => {
+    setFrames(frames.map(frame => 
+      frame.id === frameId 
+        ? { ...frame, caption } 
+        : frame
+    ));
+  };
 
   const addFrame = () => {
     const newFrame: Frame = {
@@ -105,6 +119,7 @@ export default function Dashboard() {
                 key={frame.id}
                 frame={frame}
                 onRemove={removeFrame}
+                onCaptionChange={updateCaption}
               />
             ))}
           </div>
