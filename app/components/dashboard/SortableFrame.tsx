@@ -7,15 +7,26 @@ import { Frame, Image } from "./types";
 import { useDroppable } from "@dnd-kit/core";
 import { Textarea } from "@/components/ui/textarea";
 import { useDraggable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface SortableFrameProps {
   frame: Frame;
   onRemove: (id: string) => void;
   onCaptionChange: (id: string, caption: string) => void;
   onRemoveImage: (imageId: string) => void;
+  onSortImages: (frameId: string, images: Image[]) => void;
 }
 
-export function SortableFrame({ frame, onRemove, onCaptionChange, onRemoveImage }: SortableFrameProps) {
+export function SortableFrame({ 
+  frame, 
+  onRemove, 
+  onCaptionChange, 
+  onRemoveImage,
+  onSortImages 
+}: SortableFrameProps) {
   const {
     attributes,
     listeners,
@@ -66,14 +77,19 @@ export function SortableFrame({ frame, onRemove, onCaptionChange, onRemoveImage 
               <p className="text-muted-foreground text-sm">Drop images here</p>
             </div>
           ) : (
-            frame.images.map((image) => (
-              <DraggableImage 
-                key={image.id} 
-                image={image} 
-                frameId={frame.id}
-                onRemove={onRemoveImage}
-              />
-            ))
+            <SortableContext 
+              items={frame.images}
+              strategy={horizontalListSortingStrategy}
+            >
+              {frame.images.map((image) => (
+                <DraggableImage 
+                  key={image.id} 
+                  image={image} 
+                  frameId={frame.id}
+                  onRemove={onRemoveImage}
+                />
+              ))}
+            </SortableContext>
           )}
         </div>
         <Textarea
@@ -95,7 +111,7 @@ interface DraggableImageProps {
 }
 
 function DraggableImage({ image, frameId, onRemove }: DraggableImageProps) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging, transform, transition } = useSortable({
     id: image.id,
     data: {
       type: 'frameImage',
@@ -104,9 +120,15 @@ function DraggableImage({ image, frameId, onRemove }: DraggableImageProps) {
     }
   });
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   return (
     <div 
       ref={setNodeRef}
+      style={style}
       {...listeners}
       {...attributes}
       className={`relative group h-[120px] ${isDragging ? 'opacity-50' : ''}`}

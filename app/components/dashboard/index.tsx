@@ -43,7 +43,11 @@ export default function Dashboard() {
   const [libraryImages, setLibraryImages] = useState<Image[]>([]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Only start dragging after moving 8px
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -116,10 +120,39 @@ export default function Dashboard() {
       return;
     }
 
+    const dragData = active.data.current as (DragData | { type: 'frameImage', frameId: string, url: string }) | undefined;
+
+    // Handle image sorting within the same frame
+    if (dragData?.type === 'frameImage' && !over.id.toString().includes('droppable-')) {
+      const sourceFrameId = dragData.frameId;
+      const sourceFrame = frames.find(f => f.id === sourceFrameId);
+      
+      if (sourceFrame) {
+        const oldIndex = sourceFrame.images.findIndex(img => img.id === active.id);
+        const newIndex = sourceFrame.images.findIndex(img => img.id === over.id);
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+          setFrames(frames.map(frame => {
+            if (frame.id === sourceFrameId) {
+              const newImages = arrayMove(frame.images, oldIndex, newIndex);
+              return {
+                ...frame,
+                images: newImages.map((img, index) => ({
+                  ...img,
+                  orderId: index
+                }))
+              };
+            }
+            return frame;
+          }));
+          return;
+        }
+      }
+    }
+
     // Handle image dropping into frames
     const frameId = over.id.toString().replace('droppable-', '');
     const frame = frames.find(f => f.id === frameId);
-    const dragData = active.data.current as (DragData | { type: 'frameImage', frameId: string, url: string }) | undefined;
 
     if (frame && dragData) {
       setFrames(frames.map(f => {
@@ -183,6 +216,13 @@ export default function Dashboard() {
                   onRemove={removeFrame}
                   onCaptionChange={updateCaption}
                   onRemoveImage={(imageId) => removeImageFromFrame(frame.id, imageId)}
+                  onSortImages={(frameId, images) => {
+                    setFrames(frames.map(f => 
+                      f.id === frameId 
+                        ? { ...f, images } 
+                        : f
+                    ));
+                  }}
                 />
               ))}
             </div>
