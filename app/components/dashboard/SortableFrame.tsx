@@ -6,6 +6,7 @@ import { Grip, X } from "lucide-react";
 import { Frame, Image } from "./types";
 import { useDroppable } from "@dnd-kit/core";
 import { Textarea } from "@/components/ui/textarea";
+import { useDraggable } from "@dnd-kit/core";
 
 interface SortableFrameProps {
   frame: Frame;
@@ -66,24 +67,12 @@ export function SortableFrame({ frame, onRemove, onCaptionChange, onRemoveImage 
             </div>
           ) : (
             frame.images.map((image) => (
-              <div key={image.id} className="relative group h-[120px]">
-                <img
-                  src={image.url}
-                  alt="Frame image"
-                  className="w-full h-full aspect-square object-cover rounded-md"
-                />
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveImage(image.id);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <DraggableImage 
+                key={image.id} 
+                image={image} 
+                frameId={frame.id}
+                onRemove={onRemoveImage}
+              />
             ))
           )}
         </div>
@@ -95,6 +84,49 @@ export function SortableFrame({ frame, onRemove, onCaptionChange, onRemoveImage 
           onChange={(e) => onCaptionChange(frame.id, e.target.value)}
         />
       </div>
+    </div>
+  );
+}
+
+interface DraggableImageProps {
+  image: Image;
+  frameId: string;
+  onRemove: (imageId: string) => void;
+}
+
+function DraggableImage({ image, frameId, onRemove }: DraggableImageProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: image.id,
+    data: {
+      type: 'frameImage',
+      frameId,
+      url: image.url
+    }
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`relative group h-[120px] ${isDragging ? 'opacity-50' : ''}`}
+    >
+      <img
+        src={image.url}
+        alt="Frame image"
+        className="w-full h-full aspect-square object-cover rounded-md"
+      />
+      <Button
+        variant="destructive"
+        size="icon"
+        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(image.id);
+        }}
+      >
+        <X className="h-4 w-4" />
+      </Button>
     </div>
   );
 } 

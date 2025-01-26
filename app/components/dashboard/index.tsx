@@ -80,7 +80,7 @@ export default function Dashboard() {
     const { active } = event;
     setActiveId(active.id.toString());
     
-    if (active.data.current?.type === 'image') {
+    if (active.data.current?.type === 'image' || active.data.current?.type === 'frameImage') {
       setDraggedImage({
         id: active.id.toString(),
         url: active.data.current.url,
@@ -90,7 +90,6 @@ export default function Dashboard() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log('DragEndEvent', event);
     setActiveId(null);
     setDraggedImage(null);
     
@@ -98,8 +97,10 @@ export default function Dashboard() {
     
     if (!over) return;
 
-    // Handle frame reordering - only if active item is a frame
-    if (active.data.current?.type !== 'image' && !over.id.toString().includes('droppable-')) {
+    // Handle frame reordering
+    if (active.data.current?.type !== 'image' && 
+        active.data.current?.type !== 'frameImage' && 
+        !over.id.toString().includes('droppable-')) {
       setFrames((items) => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
@@ -118,17 +119,25 @@ export default function Dashboard() {
     // Handle image dropping into frames
     const frameId = over.id.toString().replace('droppable-', '');
     const frame = frames.find(f => f.id === frameId);
-    const dragData = active.data.current as DragData | undefined;
-    console.log('dragData', frame, dragData);
-    if (frame && dragData?.type === 'image') {
+    const dragData = active.data.current as (DragData | { type: 'frameImage', frameId: string, url: string }) | undefined;
+
+    if (frame && dragData) {
       setFrames(frames.map(f => {
+        // Remove image from source frame if it's a frame-to-frame move
+        if (dragData.type === 'frameImage' && f.id === dragData.frameId) {
+          return {
+            ...f,
+            images: f.images.filter(img => img.id !== active.id)
+          };
+        }
+
+        // Add image to target frame
         if (f.id === frameId) {
           // Check if image already exists in this frame
           if (f.images.some(img => img.id === active.id)) {
             return f;
           }
           
-          // Add new image with next orderId
           const nextOrderId = Math.max(-1, ...f.images.map(img => img.orderId)) + 1;
           
           return {
@@ -181,7 +190,7 @@ export default function Dashboard() {
 
           <DragOverlay>
             {draggedImage && (
-              <div className="relative aspect-square w-24 h-24 rounded-md overflow-hidden shadow-lg opacity-80">
+              <div className="relative w-24 h-24 rounded-md overflow-hidden shadow-lg opacity-80">
                 <img
                   src={draggedImage.url}
                   alt="Dragging preview"
