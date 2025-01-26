@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Images } from '@/app/components/images';
 import { Frame } from './types';
 import { SortableFrame } from './SortableFrame';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 
 export default function Dashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [frames, setFrames] = useState<Frame[]>(() => [{
     id: crypto.randomUUID(),
     orderId: 0,
@@ -103,40 +105,67 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen w-full p-4">
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext 
-          items={frames}
-          strategy={verticalListSortingStrategy}
+    <div className="min-h-screen w-full p-4 flex">
+      <div className={`transition-[width] duration-300 ease-in-out ${isSidebarOpen ? 'w-[calc(100%-384px)]' : 'w-full'}`}>
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div className="space-y-4">
-            {frames.map((frame) => (
-              <SortableFrame
-                key={frame.id}
-                frame={frame}
-                onRemove={removeFrame}
-                onCaptionChange={updateCaption}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      <Card className="mt-5 cursor-pointer hover:bg-accent transition-colors" onClick={addFrame}>
-        <CardContent className="p-6">
-          <Button 
-            variant="ghost" 
-            className="w-full h-full flex items-center justify-center gap-2"
+          <SortableContext 
+            items={frames}
+            strategy={verticalListSortingStrategy}
           >
-            <Plus className="h-4 w-4" />
-            Add Frame
-          </Button>
-        </CardContent>
-      </Card>
+            <div className="space-y-4">
+              {frames.map((frame) => (
+                <SortableFrame
+                  key={frame.id}
+                  frame={frame}
+                  onRemove={removeFrame}
+                  onCaptionChange={updateCaption}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        <Card className="mt-5 cursor-pointer hover:bg-accent transition-colors" onClick={addFrame}>
+          <CardContent className="p-6">
+            <Button 
+              variant="ghost" 
+              className="w-full h-full flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Frame
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sidebar Toggle Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`fixed bottom-4  z-20 bg-background shadow-md rounded-l-full rounded-r-none border transition-all duration-300 ${
+          isSidebarOpen 
+            ? 'right-[384px]' 
+            : 'right-0'
+        }`}
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        {isSidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </Button>
+
+      {/* Sidebar */}
+      <div 
+        className={`fixed right-0 top-0 h-screen w-96 bg-background border-l transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="p-4 h-full overflow-y-auto">
+          <Images />
+        </div>
+      </div>
     </div>
   );
 }
