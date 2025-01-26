@@ -56,23 +56,21 @@ export function SortableFrame({ frame, onRemove, onCaptionChange, onRemoveImage 
       </Button>
       <div
         ref={setDroppableRef}
-        className="min-h-[200px] border-2 border-solid border-gray-800 rounded-md p-4"
+        className="h-[250px] border-2 border-solid border-gray-800 rounded-md p-4 pt-10"
       >
-        <div className="text-sm text-muted-foreground mb-4">
-          <span className="font-bold ml-[-40px]">{frame.orderId + 1}.</span>
-        </div>
-        <div className="grid grid-cols-4 gap-2 min-h-[100px]">
+        <div className="absolute top-[10px] left-[-20px] font-bold">{frame.orderId + 1}.</div>
+        <div className="grid grid-cols-4 gap-2 h-[120px]">
           {frame.images.length === 0 ? (
             <div className="col-span-4 flex items-center justify-center h-full">
               <p className="text-muted-foreground text-sm">Drop images here</p>
             </div>
           ) : (
             frame.images.map((image) => (
-              <div key={image.id} className="relative group">
+              <div key={image.id} className="relative group h-[120px]">
                 <img
                   src={image.url}
                   alt="Frame image"
-                  className="w-full aspect-square object-cover rounded-md"
+                  className="w-full h-full aspect-square object-cover rounded-md"
                 />
                 <Button
                   variant="destructive"
