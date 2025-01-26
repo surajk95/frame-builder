@@ -40,6 +40,7 @@ export default function Dashboard() {
   }]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedImage, setDraggedImage] = useState<Image | null>(null);
+  const [libraryImages, setLibraryImages] = useState<Image[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -144,6 +145,14 @@ export default function Dashboard() {
     }
   };
 
+  const removeImageFromFrame = (frameId: string, imageId: string) => {
+    setFrames(frames.map(frame => 
+      frame.id === frameId 
+        ? { ...frame, images: frame.images.filter(img => img.id !== imageId) }
+        : frame
+    ));
+  };
+
   return (
     <DndContext 
       sensors={sensors}
@@ -164,6 +173,7 @@ export default function Dashboard() {
                   frame={frame}
                   onRemove={removeFrame}
                   onCaptionChange={updateCaption}
+                  onRemoveImage={(imageId) => removeImageFromFrame(frame.id, imageId)}
                 />
               ))}
             </div>
@@ -215,7 +225,11 @@ export default function Dashboard() {
           }`}
         >
           <div className="p-4 h-full overflow-y-auto">
-            <Images usedImageIds={usedImageIds} />
+            <Images 
+              usedImageIds={usedImageIds} 
+              images={libraryImages}
+              setImages={setLibraryImages}
+            />
           </div>
         </div>
       </div>

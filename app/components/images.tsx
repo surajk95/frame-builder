@@ -27,6 +27,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface ImagesProps {
   usedImageIds?: Set<string>;
+  images: Image[];
+  setImages: (images: Image[]) => void;
 }
 
 interface DraggableImageProps {
@@ -60,9 +62,8 @@ function DraggableImage({ id, url }: DraggableImageProps) {
   );
 }
 
-export function Images({ usedImageIds = new Set() }: ImagesProps) {
+export function Images({ usedImageIds = new Set(), images, setImages }: ImagesProps) {
   const [imageUrls, setImageUrls] = useState<string>('');
-  const [images, setImages] = useState<Image[]>([]);
   const [isUsedOpen, setIsUsedOpen] = useState(false);
 
   const handleUrlsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

@@ -11,9 +11,10 @@ interface SortableFrameProps {
   frame: Frame;
   onRemove: (id: string) => void;
   onCaptionChange: (id: string, caption: string) => void;
+  onRemoveImage: (imageId: string) => void;
 }
 
-export function SortableFrame({ frame, onRemove, onCaptionChange }: SortableFrameProps) {
+export function SortableFrame({ frame, onRemove, onCaptionChange, onRemoveImage }: SortableFrameProps) {
   const {
     attributes,
     listeners,
@@ -60,19 +61,31 @@ export function SortableFrame({ frame, onRemove, onCaptionChange }: SortableFram
         <div className="text-sm text-muted-foreground mb-4">
           <span className="font-bold ml-[-40px]">{frame.orderId + 1}.</span>
         </div>
-        <div className="grid grid-cols-6 gap-2 min-h-[100px]">
+        <div className="grid grid-cols-4 gap-2 min-h-[100px]">
           {frame.images.length === 0 ? (
-            <div className="col-span-6 flex items-center justify-center h-full">
+            <div className="col-span-4 flex items-center justify-center h-full">
               <p className="text-muted-foreground text-sm">Drop images here</p>
             </div>
           ) : (
             frame.images.map((image) => (
-              <img
-                key={image.id}
-                src={image.url}
-                alt="Frame image"
-                className="w-full aspect-square object-cover rounded-md"
-              />
+              <div key={image.id} className="relative group">
+                <img
+                  src={image.url}
+                  alt="Frame image"
+                  className="w-full aspect-square object-cover rounded-md"
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveImage(image.id);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             ))
           )}
         </div>
