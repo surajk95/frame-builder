@@ -4,32 +4,66 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Image } from './dashboard/types';
 import {
-  DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
+  useDraggable,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableImage } from './SortableImage';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { Textarea } from "@/components/ui/textarea";
 
-export function Images() {
+interface ImagesProps {
+  usedImageIds?: Set<string>;
+}
+
+interface DraggableImageProps {
+  id: string;
+  url: string;
+}
+
+function DraggableImage({ id, url }: DraggableImageProps) {
+  const {attributes, listeners, setNodeRef, transform} = useDraggable({
+    id: id,
+    data: {
+      type: 'image',
+      url: url,
+    },
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={style}
+      className="relative aspect-square w-24 h-24 rounded-md overflow-hidden cursor-move hover:ring-2 hover:ring-primary"
+    >
+      <img src={url} alt="" className="w-full h-full object-cover" />
+    </div>
+  );
+}
+
+export function Images({ usedImageIds = new Set() }: ImagesProps) {
   const [imageUrls, setImageUrls] = useState<string>('');
   const [images, setImages] = useState<Image[]>([]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const [isUsedOpen, setIsUsedOpen] = useState(false);
 
   const handleUrlsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -55,56 +89,64 @@ export function Images() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const {active, over} = event;
-    
-    if (over && active.id !== over.id) {
-      setImages((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        return newItems.map((item, index) => ({
-          ...item,
-          orderId: index
-        }));
-      });
-    }
-  };
+  const unusedImages = images.filter(img => !usedImageIds.has(img.id));
+  const usedImages = images.filter(img => usedImageIds.has(img.id));
 
   return (
-    <div className="w-full h-full p-4 space-y-4">
-      <h2 className="text-xl font-bold">Image Library</h2>
-      
-      <div className="w-full">
-        <textarea
-          className="w-full min-h-[120px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <div className="space-y-6">
+      {/* Image URL Input */}
+      <div className="space-y-2">
+        <h3 className="font-medium">Add Images</h3>
+        <Textarea
+          className="min-h-[100px] resize-none"
           placeholder="Paste image URLs (separated by commas or newlines)..."
           value={imageUrls}
           onChange={handleUrlsChange}
-          rows={5}
         />
       </div>
 
-      <DndContext 
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext 
-          items={images}
-          strategy={horizontalListSortingStrategy}
-        >
-          <div className="grid grid-cols-3 gap-4">
-            {images.map((image) => (
-              <SortableImage
-                key={image.id}
-                image={image}
-              />
+      {/* Available Images Section */}
+      {unusedImages.length > 0 && (
+        <div>
+          <h3 className="font-medium mb-3">Available Images</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {unusedImages.map((image) => (
+              <DraggableImage key={image.id} {...image} />
             ))}
           </div>
-        </SortableContext>
-      </DndContext>
+        </div>
+      )}
+
+      {/* Used Images Section */}
+      {usedImages.length > 0 && (
+        <Collapsible
+          open={isUsedOpen}
+          onOpenChange={setIsUsedOpen}
+          className="space-y-2"
+        >
+          <CollapsibleTrigger className="flex items-center gap-2 w-full">
+            {isUsedOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span className="font-medium">Being Used ({usedImages.length})</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              {usedImages.map((image) => (
+                <img 
+                  key={image.id} 
+                  src={image.url} 
+                  alt="Used image" 
+                  className="w-full aspect-square object-cover rounded-md select-none pointer-events-none opacity-75" 
+                  draggable={false}
+                />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </div>
   );
 }

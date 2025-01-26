@@ -1,3 +1,4 @@
+'use client'
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Image } from "./dashboard/types";
@@ -13,7 +14,13 @@ export function SortableImage({ image }: SortableImageProps) {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: image.id });
+  } = useSortable({ 
+    id: image.id,
+    data: {
+      type: 'image',
+      url: image.url
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -26,7 +33,7 @@ export function SortableImage({ image }: SortableImageProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className="relative aspect-square cursor-move border border-primary rounded-md overflow-hidden"
+      className="relative aspect-square cursor-move border border-primary rounded-md overflow-hidden hover:opacity-80 transition-opacity"
     >
       <img
         src={image.url}
