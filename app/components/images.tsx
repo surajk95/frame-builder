@@ -16,7 +16,7 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableImage } from './SortableImage';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
@@ -24,6 +24,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 interface ImagesProps {
   usedImageIds?: Set<string>;
@@ -36,7 +37,7 @@ interface DraggableImageProps {
   url: string;
 }
 
-function DraggableImage({ id, url }: DraggableImageProps) {
+function DraggableImage({ id, url, onRemove }: DraggableImageProps & { onRemove: (id: string) => void }) {
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: id,
     data: {
@@ -55,9 +56,18 @@ function DraggableImage({ id, url }: DraggableImageProps) {
       {...listeners}
       {...attributes}
       style={style}
-      className="relative aspect-square w-24 h-24 rounded-md overflow-hidden cursor-move hover:ring-2 hover:ring-primary"
+      className="group relative aspect-square w-24 h-24 rounded-md overflow-hidden cursor-move hover:ring-2 hover:ring-primary"
     >
       <img src={url} alt="" className="w-full h-full object-cover" />
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(id);
+        }}
+        className="absolute top-1 right-1 p-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+      >
+        <X className="h-4 w-4 text-white" />
+      </button>
     </div>
   );
 }
@@ -65,29 +75,52 @@ function DraggableImage({ id, url }: DraggableImageProps) {
 export function Images({ usedImageIds = new Set(), images, setImages }: ImagesProps) {
   const [imageUrls, setImageUrls] = useState<string>('');
   const [isUsedOpen, setIsUsedOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleUrlsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    setImageUrls(newValue);
-
-    // Auto-process URLs when they contain commas or newlines
-    if (newValue.includes(',') || newValue.includes('\n')) {
+    // Auto-process URLs
       const urls = newValue
         .split(/[\n,]/) // Split by newline or comma
         .map(url => url.trim())
         .filter(url => url && url.startsWith('http')); // Basic URL validation
-
+      if(urls.length === 0) {
+        toast({
+          description: `No URLs found.`,
+        });
+        return;
+      }
       if (urls.length > 0) {
-        const newImages: Image[] = urls.map((url, index) => ({
-          id: crypto.randomUUID(),
-          url,
-          orderId: images.length + index,
-        }));
+        // Filter out existing URLs
+        const existingUrls = new Set(images.map(img => img.url));
+        const newUrls = urls.filter(url => !existingUrls.has(url));
+        
+        // Check if any URLs were filtered out as duplicates
+        const duplicateCount = urls.length - newUrls.length;
+        if (duplicateCount > 0) {
+          toast({
+            description: `${duplicateCount} image${duplicateCount > 1 ? 's were' : ' was'} already added, skipping ${duplicateCount > 1 ? 'them' : 'it'}.`,
+          });
+        }
 
-        setImages([...images, ...newImages]);
+        if (newUrls.length > 0) {
+          const newImages: Image[] = newUrls.map((url, index) => ({
+            id: crypto.randomUUID(),
+            url,
+            orderId: images.length + index,
+          }));
+
+          setImages([...images, ...newImages]);
+        }
         setImageUrls('');
       }
-    }
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setImages(images.filter(img => img.id !== id));
+    toast({
+      description: "Image removed successfully.",
+    });
   };
 
   const unusedImages = images.filter(img => !usedImageIds.has(img.id));
@@ -112,7 +145,11 @@ export function Images({ usedImageIds = new Set(), images, setImages }: ImagesPr
           <h3 className="font-medium mb-3">Available Images</h3>
           <div className="grid grid-cols-3 gap-2">
             {unusedImages.map((image) => (
-              <DraggableImage key={image.id} {...image} />
+              <DraggableImage 
+                key={image.id} 
+                {...image} 
+                onRemove={handleRemoveImage}
+              />
             ))}
           </div>
         </div>
