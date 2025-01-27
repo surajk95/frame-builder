@@ -1,23 +1,8 @@
 'use client'
 import { useState } from 'react';
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Image } from './dashboard/types';
-import {
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDraggable,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { SortableImage } from './SortableImage';
+import { useDraggable } from '@dnd-kit/core';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,

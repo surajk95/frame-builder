@@ -1,5 +1,5 @@
 import Dashboard from "./components/dashboard";
-import { ThemeToggle } from "./components/theme-toggle";
+import { ThemeToggle } from "../components/theme-toggle";
 
 export default function Home() {
   return (

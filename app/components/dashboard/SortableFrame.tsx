@@ -1,12 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Grip, X } from "lucide-react";
 import { Frame, Image } from "./types";
 import { useDroppable } from "@dnd-kit/core";
 import { Textarea } from "@/components/ui/textarea";
-import { useDraggable } from "@dnd-kit/core";
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -68,7 +66,7 @@ export function SortableFrame({
       </Button>
       <div
         ref={setDroppableRef}
-        className="h-[250px] border-2 border-solid border-gray-800 rounded-md p-4 pt-10"
+        className="h-[225px] border-2 border-solid dark:border-gray-800 rounded-md p-4 pt-10"
       >
         <div className="absolute top-[10px] left-[-20px] font-bold">{frame.orderId + 1}.</div>
         <div className="grid grid-cols-4 gap-2 h-[120px] overflow-y-auto">
@@ -94,7 +92,7 @@ export function SortableFrame({
         </div>
         <Textarea
           placeholder="Add a caption..."
-          className="mt-4 resize-none"
+          className="mt-4 resize-none min-h-[unset]"
           rows={1}
           value={frame.caption}
           onChange={(e) => onCaptionChange(frame.id, e.target.value)}
