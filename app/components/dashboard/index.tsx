@@ -98,7 +98,6 @@ export default function Dashboard() {
     setDraggedImage(null);
     
     const {active, over} = event;
-    
     if (!over) return;
 
     // Handle frame reordering
@@ -121,70 +120,81 @@ export default function Dashboard() {
     }
 
     const dragData = active.data.current as (DragData | { type: 'frameImage', frameId: string, url: string }) | undefined;
+    if (!dragData) return;
 
-    // Handle image sorting within the same frame
-    if (dragData?.type === 'frameImage' && !over.id.toString().includes('droppable-')) {
-      const sourceFrameId = dragData.frameId;
-      const sourceFrame = frames.find(f => f.id === sourceFrameId);
-      
-      if (sourceFrame) {
-        const oldIndex = sourceFrame.images.findIndex(img => img.id === active.id);
-        const newIndex = sourceFrame.images.findIndex(img => img.id === over.id);
-        
-        if (oldIndex !== -1 && newIndex !== -1) {
-          setFrames(frames.map(frame => {
-            if (frame.id === sourceFrameId) {
-              const newImages = arrayMove(frame.images, oldIndex, newIndex);
-              return {
-                ...frame,
-                images: newImages.map((img, index) => ({
-                  ...img,
-                  orderId: index
-                }))
-              };
-            }
-            return frame;
-          }));
-          return;
-        }
+    // Get frame ID either from droppable area or from the image being dropped on
+    let targetFrameId = over.id.toString().replace('droppable-', '');
+    const overFrame = frames.find(f => f.id === targetFrameId);
+    
+    // If we're dropping on an image, find its frame
+    if (!overFrame) {
+      const frameWithOverImage = frames.find(f => 
+        f.images.some(img => img.id === over.id.toString())
+      );
+      if (frameWithOverImage) {
+        targetFrameId = frameWithOverImage.id;
       }
     }
 
-    // Handle image dropping into frames
-    const frameId = over.id.toString().replace('droppable-', '');
-    const frame = frames.find(f => f.id === frameId);
+    const targetFrame = frames.find(f => f.id === targetFrameId);
+    if (!targetFrame) return;
 
-    if (frame && dragData) {
-      setFrames(frames.map(f => {
-        // Remove image from source frame if it's a frame-to-frame move
-        if (dragData.type === 'frameImage' && f.id === dragData.frameId) {
-          return {
-            ...f,
-            images: f.images.filter(img => img.id !== active.id)
-          };
-        }
+    setFrames(frames.map(f => {
+      // Remove image from source frame if it's a frame-to-frame move
+      if (dragData.type === 'frameImage' && f.id === dragData.frameId
+        && dragData.frameId !== targetFrameId
+      ) {
+        return {
+          ...f,
+          images: f.images.filter(img => img.id !== active.id)
+        };
+      }
 
-        // Add image to target frame
-        if (f.id === frameId) {
-          // Check if image already exists in this frame
-          if (f.images.some(img => img.id === active.id)) {
-            return f;
+      // Add/reorder image in target frame
+      if (f.id === targetFrameId) {
+        let newImages = [...f.images];
+        const draggedImage = {
+          id: active.id.toString(),
+          url: dragData.url,
+          orderId: 0
+        };
+
+        // Find the current index of the dragged image (if it exists in this frame)
+        const currentIndex = newImages.findIndex(img => img.id === draggedImage.id);
+        
+        // Find where we want to insert the image
+        const overImageIndex = newImages.findIndex(img => img.id === over.id.toString());
+        
+        // Remove the dragged image if it already exists in this frame
+        if (currentIndex !== -1) {
+          newImages.splice(currentIndex, 1);
+          if (overImageIndex !== -1) {
+            newImages.splice(overImageIndex, 0, draggedImage);
+          } else {
+            newImages.push(draggedImage);
           }
-          
-          const nextOrderId = Math.max(-1, ...f.images.map(img => img.orderId)) + 1;
-          
-          return {
-            ...f,
-            images: [...f.images, {
-              id: active.id.toString(),
-              url: dragData.url,
-              orderId: nextOrderId
-            }]
-          };
+        } else {
+          // If the image wasn't in this frame before, just insert it at the target position
+          if (overImageIndex !== -1) {
+            newImages.splice(overImageIndex, 0, draggedImage);
+          } else {
+            newImages.push(draggedImage);
+          }
         }
-        return f;
-      }));
-    }
+
+        // Update orderIds
+        newImages = newImages.map((img, index) => ({
+          ...img,
+          orderId: index
+        }));
+
+        return {
+          ...f,
+          images: newImages
+        };
+      }
+      return f;
+    }));
   };
 
   const removeImageFromFrame = (frameId: string, imageId: string) => {
