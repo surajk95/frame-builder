@@ -214,7 +214,24 @@ export default function Dashboard() {
         caption,
         images: images
           .sort((a, b) => a.orderId - b.orderId)
-          .map(({ url }) => ({ url }))
+          .map(({ url }) => {
+            const image = libraryImages.find(img => img.url === url);
+            if (!image) return { url };
+            const { sizes } = image;
+            
+            // Convert sizes object to include both URL and size number
+            const sizeEntries = sizes ? Object.entries(sizes).map(([size, sizeUrl]) => ({
+              size: parseInt(size),
+              url: sizeUrl
+            })) : [];
+            
+            return {
+              url,
+              sizes: sizeEntries.length > 0 ? Object.fromEntries(
+                sizeEntries.map(({ size, url }) => [size, url])
+              ) : undefined
+            };
+          })
       }));
 
     // Copy to clipboard
@@ -233,8 +250,6 @@ export default function Dashboard() {
         });
       });
   };
-
-  console.log(`zzz`, frames);
 
   return (
     <DndContext 

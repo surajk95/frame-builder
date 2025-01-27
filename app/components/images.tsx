@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { extractSizeFromUrl } from '@/lib/utils';
 
 interface ImagesProps {
   usedImageIds?: Set<string>;
@@ -72,6 +73,25 @@ function DraggableImage({ id, url, onRemove }: DraggableImageProps & { onRemove:
   );
 }
 
+function groupImagesByBaseId(urls: string[]): Map<string, Record<string, string>> {
+  const groups = new Map<string, Record<string, string>>();
+  
+  urls.forEach(url => {
+    const sizeInfo = extractSizeFromUrl(url);
+    if (!sizeInfo) return;
+    
+    const { baseId, size } = sizeInfo;
+    if (!groups.has(baseId)) {
+      groups.set(baseId, {});
+    }
+    
+    const sizeMap = groups.get(baseId)!;
+    sizeMap[size] = url;
+  });
+  
+  return groups;
+}
+
 export function Images({ usedImageIds = new Set(), images, setImages }: ImagesProps) {
   const [imageUrls, setImageUrls] = useState<string>('');
   const [isUsedOpen, setIsUsedOpen] = useState(false);
@@ -79,41 +99,61 @@ export function Images({ usedImageIds = new Set(), images, setImages }: ImagesPr
 
   const handleUrlsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    // Auto-process URLs
-      const urls = newValue
-        .split(/[\n,]/) // Split by newline or comma
-        .map(url => url.trim())
-        .filter(url => url && url.startsWith('http')); // Basic URL validation
-      if(urls.length === 0) {
-        toast({
-          description: `No URLs found.`,
-        });
-        return;
-      }
-      if (urls.length > 0) {
-        // Filter out existing URLs
-        const existingUrls = new Set(images.map(img => img.url));
-        const newUrls = urls.filter(url => !existingUrls.has(url));
+    // Split and clean URLs
+    const urls = newValue
+      .split(/[\n,]/)
+      .map(url => url.trim())
+      .filter(url => url && url.startsWith('http'));
+
+    if (urls.length === 0) {
+      toast({
+        description: `No URLs found.`,
+      });
+      return;
+    }
+
+    // Group URLs by base image ID and collect size variants
+    const imageGroups = groupImagesByBaseId(urls);
+    
+    // For each group, select the smallest size variant as the main URL
+    const newImages: Image[] = [];
+    let duplicateCount = 0;
+
+    imageGroups.forEach((sizeMap, baseId) => {
+      // Check if this base image already exists
+      const existingImage = images.find(img => {
+        const existingSizeInfo = extractSizeFromUrl(img.url);
+        return existingSizeInfo?.baseId === baseId;
+      });
+
+      if (existingImage) {
+        // Update sizes for existing image
+        existingImage.sizes = { ...(existingImage.sizes || {}), ...sizeMap };
+        duplicateCount++;
+      } else {
+        // Find smallest size URL to use as main URL
+        const sizes = Object.keys(sizeMap).map(Number);
+        const smallestSize = Math.min(...sizes).toString();
         
-        // Check if any URLs were filtered out as duplicates
-        const duplicateCount = urls.length - newUrls.length;
-        if (duplicateCount > 0) {
-          toast({
-            description: `${duplicateCount} image${duplicateCount > 1 ? 's were' : ' was'} already added, skipping ${duplicateCount > 1 ? 'them' : 'it'}.`,
-          });
-        }
-
-        if (newUrls.length > 0) {
-          const newImages: Image[] = newUrls.map((url, index) => ({
-            id: crypto.randomUUID(),
-            url,
-            orderId: images.length + index,
-          }));
-
-          setImages([...images, ...newImages]);
-        }
-        setImageUrls('');
+        newImages.push({
+          id: crypto.randomUUID(),
+          url: sizeMap[smallestSize],
+          orderId: images.length + newImages.length,
+          sizes: sizeMap
+        });
       }
+    });
+
+    if (duplicateCount > 0) {
+      toast({
+        description: `${duplicateCount} image${duplicateCount > 1 ? 's were' : ' was'} already added, updating size variants.`,
+      });
+    }
+
+    if (newImages.length > 0) {
+      setImages([...images, ...newImages]);
+    }
+    setImageUrls('');
   };
 
   const handleRemoveImage = (id: string) => {
