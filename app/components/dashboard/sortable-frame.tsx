@@ -15,7 +15,6 @@ interface SortableFrameProps {
   onRemove: (id: string) => void;
   onCaptionChange: (id: string, caption: string) => void;
   onRemoveImage: (imageId: string) => void;
-  onSortImages: (frameId: string, images: Image[]) => void;
 }
 
 export function SortableFrame({ 
@@ -23,7 +22,6 @@ export function SortableFrame({
   onRemove, 
   onCaptionChange, 
   onRemoveImage,
-  onSortImages 
 }: SortableFrameProps) {
   const {
     attributes,

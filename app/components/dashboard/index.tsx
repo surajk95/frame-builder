@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Images } from '@/app/components/images';
 import { Frame, Image } from './types';
-import { SortableFrame } from './SortableFrame';
+import { SortableFrame } from './sortable-frame';
 import {
   DndContext, 
   closestCenter,
@@ -39,7 +39,6 @@ export default function Dashboard() {
     caption: '',
     images: [],
   }]);
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedImage, setDraggedImage] = useState<Image | null>(null);
   const [libraryImages, setLibraryImages] = useState<Image[]>([]);
 
@@ -83,7 +82,6 @@ export default function Dashboard() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    setActiveId(active.id.toString());
     
     if (active.data.current?.type === 'image' || active.data.current?.type === 'frameImage') {
       setDraggedImage({
@@ -95,7 +93,6 @@ export default function Dashboard() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null);
     setDraggedImage(null);
     
     const {active, over} = event;
@@ -238,11 +235,12 @@ export default function Dashboard() {
     navigator.clipboard.writeText(JSON.stringify(processedData, null, 2))
       .then(() => {
         toast({
-          description: "Copied data",
+          variant: "default",
+          description: <span className="font-bold text-green-500">Copied data</span>,
           duration: 2000,
         });
       })
-      .catch(err => {
+      .catch(() => {
         toast({
           variant: "destructive",
           description: "Failed to copy data",
@@ -283,13 +281,6 @@ export default function Dashboard() {
                   onRemove={removeFrame}
                   onCaptionChange={updateCaption}
                   onRemoveImage={(imageId) => removeImageFromFrame(frame.id, imageId)}
-                  onSortImages={(frameId, images) => {
-                    setFrames(frames.map(f => 
-                      f.id === frameId 
-                        ? { ...f, images } 
-                        : f
-                    ));
-                  }}
                 />
               ))}
             </div>
