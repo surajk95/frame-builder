@@ -71,7 +71,7 @@ export function SortableFrame({
         className="h-[250px] border-2 border-solid border-gray-800 rounded-md p-4 pt-10"
       >
         <div className="absolute top-[10px] left-[-20px] font-bold">{frame.orderId + 1}.</div>
-        <div className="grid grid-cols-4 gap-2 h-[120px]">
+        <div className="grid grid-cols-4 gap-2 h-[120px] overflow-y-auto">
           {frame.images.length === 0 ? (
             <div className="col-span-4 flex items-center justify-center h-full">
               <p className="text-muted-foreground text-sm">Drop images here</p>

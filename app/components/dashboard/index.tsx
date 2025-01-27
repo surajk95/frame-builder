@@ -267,7 +267,7 @@ export default function Dashboard() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Export
+              Export (JSON)
             </Button>
           </div>
 
