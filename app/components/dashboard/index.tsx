@@ -1,9 +1,8 @@
 'use client'
 import { useState, useMemo } from 'react';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Images } from '@/app/components/images';
 import { Frame, Image } from './types';
 import { SortableFrame } from './SortableFrame';
@@ -24,6 +23,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useToast } from "@/hooks/use-toast";
 
 interface DragData {
   type: 'image';
@@ -31,6 +31,7 @@ interface DragData {
 }
 
 export default function Dashboard() {
+  const { toast } = useToast();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [frames, setFrames] = useState<Frame[]>(() => [{
     id: crypto.randomUUID(),
@@ -205,6 +206,36 @@ export default function Dashboard() {
     ));
   };
 
+  const exportData = () => {
+    // Sort frames by orderId and process data
+    const processedData = frames
+      .sort((a, b) => a.orderId - b.orderId)
+      .map(({ caption, images }) => ({
+        caption,
+        images: images
+          .sort((a, b) => a.orderId - b.orderId)
+          .map(({ url }) => ({ url }))
+      }));
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(JSON.stringify(processedData, null, 2))
+      .then(() => {
+        toast({
+          description: "Copied data",
+          duration: 2000,
+        });
+      })
+      .catch(err => {
+        toast({
+          variant: "destructive",
+          description: "Failed to copy data",
+          duration: 2000,
+        });
+      });
+  };
+
+  console.log(`zzz`, frames);
+
   return (
     <DndContext 
       sensors={sensors}
@@ -214,6 +245,17 @@ export default function Dashboard() {
     >
       <div className="min-h-screen w-full p-4 flex">
         <div className={`transition-[width] duration-300 ease-in-out ${isSidebarOpen ? 'w-[calc(100%-384px)]' : 'w-full'}`}>
+          <div className="mb-4 flex justify-end">
+            <Button
+              onClick={exportData}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+
           <SortableContext 
             items={frames}
             strategy={verticalListSortingStrategy}
