@@ -15,6 +15,7 @@ interface SortableFrameProps {
   onRemove: (id: string) => void;
   onCaptionChange: (id: string, caption: string) => void;
   onRemoveImage: (imageId: string) => void;
+  onImageClick: (imageUrl: string) => void;
 }
 
 export function SortableFrame({ 
@@ -22,6 +23,7 @@ export function SortableFrame({
   onRemove, 
   onCaptionChange, 
   onRemoveImage,
+  onImageClick,
 }: SortableFrameProps) {
   const {
     attributes,
@@ -83,6 +85,7 @@ export function SortableFrame({
                   image={image} 
                   frameId={frame.id}
                   onRemove={onRemoveImage}
+                  onImageClick={onImageClick}
                 />
               ))}
             </SortableContext>
@@ -104,9 +107,10 @@ interface DraggableImageProps {
   image: Image;
   frameId: string;
   onRemove: (imageId: string) => void;
+  onImageClick: (imageUrl: string) => void;
 }
 
-function DraggableImage({ image, frameId, onRemove }: DraggableImageProps) {
+function DraggableImage({ image, frameId, onRemove, onImageClick }: DraggableImageProps) {
   const { attributes, listeners, setNodeRef, isDragging, transform, transition } = useSortable({
     id: image.id,
     data: {
@@ -129,11 +133,16 @@ function DraggableImage({ image, frameId, onRemove }: DraggableImageProps) {
       {...attributes}
       className={`relative group h-[120px] ${isDragging ? 'opacity-50' : ''}`}
     >
-      <img
-        src={image.url}
-        alt="Frame image"
-        className="w-full h-full aspect-square object-cover rounded-md"
-      />
+      <div
+        className="relative w-full h-full rounded-md overflow-hidden"
+        onClick={() => onImageClick(image.url)}
+      >
+        <img
+          src={image.url}
+          alt="Frame image"
+          className="w-full h-full object-cover cursor-pointer"
+        />
+      </div>
       <Button
         variant="destructive"
         size="icon"

@@ -24,6 +24,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useToast } from "@/hooks/use-toast";
+import { ImagePreview } from './image-preview'
 
 interface DragData {
   type: 'image';
@@ -74,6 +75,8 @@ export default function Dashboard() {
     const parsed = JSON.parse(stored) as StoredState;
     return parsed.libraryImages;
   });
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -350,6 +353,12 @@ export default function Dashboard() {
     });
   };
 
+  const handleImageClick = (imageUrl: string) => {
+    if (!draggedImage) { // Only show preview if not dragging
+      setPreviewImage(imageUrl)
+    }
+  }
+
   return (
     <DndContext 
       sensors={sensors}
@@ -357,6 +366,13 @@ export default function Dashboard() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      {previewImage && (
+        <ImagePreview
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
+      
       <div className="min-h-screen w-full p-4 flex">
         <div className={`transition-[width] duration-300 ease-in-out ${isSidebarOpen ? 'w-[calc(100%-384px)]' : 'w-full'}`}>
           <div className="mb-4 flex justify-end gap-2">
@@ -406,6 +422,7 @@ export default function Dashboard() {
                   onRemove={removeFrame}
                   onCaptionChange={updateCaption}
                   onRemoveImage={(imageId) => removeImageFromFrame(frame.id, imageId)}
+                  onImageClick={handleImageClick}
                 />
               ))}
             </div>
