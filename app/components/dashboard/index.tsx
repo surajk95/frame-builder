@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Download, Save, RotateCcw, Trash2 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Images } from '@/app/components/images';
@@ -30,17 +30,50 @@ interface DragData {
   url: string;
 }
 
+interface StoredState {
+  frames: Frame[];
+  libraryImages: Image[];
+  isSidebarOpen: boolean;
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [frames, setFrames] = useState<Frame[]>(() => [{
-    id: crypto.randomUUID(),
-    orderId: 0,
-    caption: '',
-    images: [],
-  }]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('dashboardState');
+    if (!stored) return true;
+    const parsed = JSON.parse(stored) as StoredState;
+    return parsed.isSidebarOpen;
+  });
+
+  const [frames, setFrames] = useState<Frame[]>(() => {
+    if (typeof window === 'undefined') return [{
+      id: crypto.randomUUID(),
+      orderId: 0,
+      caption: '',
+      images: [],
+    }];
+    
+    const stored = localStorage.getItem('dashboardState');
+    if (!stored) return [{
+      id: crypto.randomUUID(),
+      orderId: 0,
+      caption: '',
+      images: [],
+    }];
+    
+    const parsed = JSON.parse(stored) as StoredState;
+    return parsed.frames;
+  });
+
   const [draggedImage, setDraggedImage] = useState<Image | null>(null);
-  const [libraryImages, setLibraryImages] = useState<Image[]>([]);
+  const [libraryImages, setLibraryImages] = useState<Image[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('dashboardState');
+    if (!stored) return [];
+    const parsed = JSON.parse(stored) as StoredState;
+    return parsed.libraryImages;
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -249,6 +282,74 @@ export default function Dashboard() {
       });
   };
 
+  const saveState = () => {
+    const state: StoredState = {
+      frames,
+      libraryImages,
+      isSidebarOpen
+    };
+    
+    localStorage.setItem('dashboardState', JSON.stringify(state));
+    toast({
+      variant: "default",
+      description: <span className="font-bold text-green-500">Saved state to browser storage</span>,
+      duration: 2000,
+    });
+  };
+
+  const retrieveState = () => {
+    const stored = localStorage.getItem('dashboardState');
+    if (!stored) {
+      toast({
+        variant: "destructive",
+        description: "No saved state found",
+        duration: 2000,
+      });
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as StoredState;
+      setFrames(parsed.frames);
+      setLibraryImages(parsed.libraryImages);
+      setIsSidebarOpen(parsed.isSidebarOpen);
+      
+      toast({
+        variant: "default",
+        description: <span className="font-bold text-green-500">Retrieved saved state</span>,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error retrieving saved state:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to load saved state",
+        duration: 2000,
+      });
+    }
+
+
+  };
+
+  const resetState = () => {
+    const initialFrame = {
+      id: crypto.randomUUID(),
+      orderId: 0,
+      caption: '',
+      images: [],
+    };
+
+    setFrames([initialFrame]);
+    setLibraryImages([]);
+    localStorage.removeItem('dashboardState');
+    
+    toast({
+      variant: "default",
+      description: <span className="font-bold text-orange-500">Reset to initial state</span>,
+      duration: 2000,
+    });
+  };
+
   return (
     <DndContext 
       sensors={sensors}
@@ -258,7 +359,31 @@ export default function Dashboard() {
     >
       <div className="min-h-screen w-full p-4 flex">
         <div className={`transition-[width] duration-300 ease-in-out ${isSidebarOpen ? 'w-[calc(100%-384px)]' : 'w-full'}`}>
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex justify-end gap-2">
+            <Button
+              onClick={saveState}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Save State
+            </Button>
+            <Button
+              onClick={retrieveState}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Retrieve State
+            </Button>
+            <Button
+              onClick={resetState}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Reset
+            </Button>
             <Button
               onClick={exportData}
               variant="outline"
